@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+echo "0000:07:00.1" > /sys/bus/pci/drivers/snd_hda_intel/unbind
+
+modprobe vfio
+modprobe vfio_pci ids=10de:1189,10de:0e0a
+modprobe vfio_iommu_type1
+
+
+for (( i = 0; i < 16; i++))
+do
+  if test -x /sys/class/vtconsole/vtcon"${i}"; then
+      if [ "$(grep -c "frame buffer" /sys/class/vtconsole/vtcon"${i}"/name)" = 1 ]; then
+	       echo 0 > /sys/class/vtconsole/vtcon"${i}"/bind
+           echo "$DATE Unbinding Console ${i}"
+           echo "$i" >> /tmp/vfio-bound-consoles
+      fi
+  fi
+done
+
+rmmod kvm_amd
+rmmod kvm
+modprobe kvm ignore_msrs=1
+modprobe kvm_amd
